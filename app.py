@@ -3,6 +3,19 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 
+# Class labels
+CLASS_LABELS = {
+    0: "Pizza",
+    1: "Soft Drink",
+    2: "Burger",
+}
+
+CLASS_EMOJIS = {
+    0: "🍕",
+    1: "🥤",
+    2: "🍔",
+}
+
 # Set page config
 st.set_page_config(page_title="Food Classifier", page_icon="🍔")
 
@@ -48,8 +61,9 @@ if uploaded_file is not None:
         confidence = np.max(predictions[0])
         
         # Display results
-        st.success(f"Prediction: Class {predicted_class_idx} (Confidence: {confidence:.2f})")
-        st.info("Tip: Update app.py with your specific class labels for more descriptive output.")
+        label = CLASS_LABELS.get(int(predicted_class_idx), f"Unknown ({predicted_class_idx})")
+        emoji = CLASS_EMOJIS.get(int(predicted_class_idx), "❓")
+        st.success(f"{emoji} Prediction: **{label}** (Confidence: {confidence * 100:.1f}%)")
         
     except Exception as e:
         st.error(f"Error during prediction: {e}")
