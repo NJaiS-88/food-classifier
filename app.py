@@ -24,7 +24,7 @@ st.write("Upload an image of food to see what the model predicts!")
 
 @st.cache_resource
 def load_model():
-    model = tf.keras.models.load_model('my_model.keras')
+    model = tf.keras.models.load_model('my_model (2).keras')
     return model
 
 with st.spinner('Loading model...'):
