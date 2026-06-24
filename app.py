@@ -1,7 +1,7 @@
 import streamlit as st
-import tensorflow as tf
-from PIL import Image
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing import image
 
 # Class labels
 CLASS_LABELS = {
@@ -24,10 +24,10 @@ st.write("Upload an image of food to see what the model predicts!")
 
 @st.cache_resource
 def load_model():
-    model = tf.keras.models.load_model('my_model (2).keras')
+    model = tf.keras.models.load_model("my_model (2).keras")
     return model
 
-with st.spinner('Loading model...'):
+with st.spinner("Loading model..."):
     try:
         model = load_model()
     except Exception as e:
@@ -37,33 +37,25 @@ with st.spinner('Loading model...'):
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert('RGB')
-    st.image(image, caption='Uploaded Image.', use_column_width=True)
-    
+    st.image(uploaded_file, caption="Uploaded Image.", use_column_width=True)
     st.write("Classifying...")
-    
-    # Preprocess image
-    # Note: Resize dimensions should match what the model was trained on.
-    # Defaulting to 224x224 as it is common.
-    target_size = (128, 128) 
-    
-    try:
-        img_resized = image.resize(target_size)
-        img_array = np.array(img_resized)
-        img_array = np.expand_dims(img_array, axis=0)
-        # Add scaling if the model requires it
-        # img_array = img_array / 255.0
 
+    try:
+        # Preprocess image exactly like Colab
+        target_size = (128, 128)  # must match training size
+        img = image.load_img(uploaded_file, target_size=target_size)
+        img_array = image.img_to_array(img) / 255.0   # normalize
+        img_array = np.expand_dims(img_array, axis=0) # add batch dimension
+
+        # Predict
         predictions = model.predict(img_array)
-        
-        # Assuming classification model
         predicted_class_idx = np.argmax(predictions[0])
         confidence = np.max(predictions[0])
-        
+
         # Display results
         label = CLASS_LABELS.get(int(predicted_class_idx), f"Unknown ({predicted_class_idx})")
         emoji = CLASS_EMOJIS.get(int(predicted_class_idx), "❓")
-        st.success(f"{emoji} Prediction: **{label}** (Confidence: {confidence * 100:.1f}%)")
-        
+        st.success(f"{emoji} Prediction: **{label}** (Confidence: {confidence:.2f})")
+
     except Exception as e:
         st.error(f"Error during prediction: {e}")
