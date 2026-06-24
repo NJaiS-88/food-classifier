@@ -1,38 +1,55 @@
 import streamlit as st
-import numpy as np
-from PIL import Image
 import tensorflow as tf
+from PIL import Image
+import numpy as np
 
-# Load your trained model
-model = tf.keras.models.load_model("my_model.keras")
+# Set page config
+st.set_page_config(page_title="Food Classifier", page_icon="🍔")
 
-# Define labels
-labels = {0: "Pizza", 1: "Softdrink", 2: "Burger"}
+st.title("🍔 Food Classifier App")
+st.write("Upload an image of food to see what the model predicts!")
 
-# Title
-st.title("Food Image Classifier")
+@st.cache_resource
+def load_model():
+    model = tf.keras.models.load_model('my_model.keras')
+    return model
 
-# Upload image
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+with st.spinner('Loading model...'):
+    try:
+        model = load_model()
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        st.stop()
+
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Open and convert to RGB (drop alpha channel if present)
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Image", width=300)
+    image = Image.open(uploaded_file).convert('RGB')
+    st.image(image, caption='Uploaded Image.', use_column_width=True)
+    
+    st.write("Classifying...")
+    
+    # Preprocess image
+    # Note: Resize dimensions should match what the model was trained on.
+    # Defaulting to 224x224 as it is common.
+    target_size = (128, 128) 
+    
+    try:
+        img_resized = image.resize(target_size)
+        img_array = np.array(img_resized)
+        img_array = np.expand_dims(img_array, axis=0)
+        # Add scaling if the model requires it
+        # img_array = img_array / 255.0
 
-    # Preprocess the image (adjust size to match your model input)
-    img = image.resize((128, 128))  # change size if your model expects different input
-    img_array = np.array(img) / 255.0  # normalize
-    img_array = np.expand_dims(img_array, axis=0)  # add batch dimension
-
-    # Predict
-    prediction = model.predict(img_array)
-    predicted_class = np.argmax(prediction)
-
-    # Show result
-    st.write(f"Prediction: {predicted_class} → {labels[predicted_class]}")
-
-    # Optional: show confidence scores
-    st.write("Confidence scores:")
-    for i, score in enumerate(prediction[0]):
-        st.write(f"{labels[i]}: {score:.2f}")
+        predictions = model.predict(img_array)
+        
+        # Assuming classification model
+        predicted_class_idx = np.argmax(predictions[0])
+        confidence = np.max(predictions[0])
+        
+        # Display results
+        st.success(f"Prediction: Class {predicted_class_idx} (Confidence: {confidence:.2f})")
+        st.info("Tip: Update app.py with your specific class labels for more descriptive output.")
+        
+    except Exception as e:
+        st.error(f"Error during prediction: {e}")
